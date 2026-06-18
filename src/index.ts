@@ -13,7 +13,7 @@ import { App } from './cli/App';
 if (!process.env.DEEPSEEK_API_KEY) {
   console.error('');
   console.error('╔═══════════════════════════════════════════════════╗');
-  console.error('║          A E M E A T H   v1.0.0                  ║');
+  console.error('║          A E M E A T H   v1.0.1                  ║');
   console.error('╚═══════════════════════════════════════════════════╝');
   console.error('');
   console.error('❌ 错误: 请设置 DEEPSEEK_API_KEY 环境变量');
@@ -29,6 +29,40 @@ if (!process.env.DEEPSEEK_API_KEY) {
   process.exit(1);
 }
 
+// 检查终端是否支持 raw mode
+function isRawModeSupported(): boolean {
+  try {
+    return typeof process.stdin.setRawMode === 'function';
+  } catch {
+    return false;
+  }
+}
+
 // 渲染应用
 console.clear();
-render(React.createElement(App));
+
+if (isRawModeSupported()) {
+  // 完整 Ink 模式
+  render(React.createElement(App));
+} else {
+  // 降级到简化模式
+  console.log('');
+  console.log('╔═══════════════════════════════════════════════════╗');
+  console.log('║          A E M E A T H   v1.0.1                  ║');
+  console.log('║          爱弥斯 · 你的个人AI助手                  ║');
+  console.log('╚═══════════════════════════════════════════════════╝');
+  console.log('');
+  console.log('⚠️  当前终端不支持完整 CLI 模式');
+  console.log('   请使用 bun run start 启动简化版本');
+  console.log('');
+  console.log('   或者使用支持 raw mode 的终端：');
+  console.log('   - Windows Terminal');
+  console.log('   - PowerShell 7+');
+  console.log('   - Git Bash');
+  console.log('');
+  
+  // 动态导入简化版本
+  import('./start.ts').catch(() => {
+    console.log('运行命令: bun run start');
+  });
+}
