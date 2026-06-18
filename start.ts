@@ -30,7 +30,11 @@ async function main() {
   
   const askQuestion = (question: string): Promise<string> => {
     return new Promise((resolve) => {
-      rl.question(question, resolve);
+      rl.question(question, (answer) => {
+        // 清除输入行
+        process.stdout.write('\r\x1b[K');
+        resolve(answer);
+      });
     });
   };
   
