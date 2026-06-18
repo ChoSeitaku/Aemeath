@@ -1,0 +1,78 @@
+{
+  "name": "aemeath",
+  "version": "1.0.0",
+  "description": "Aemeath - 你的个人AI助手，不只是工具，更是朋友",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "aemeath": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/aemeath.git"
+  },
+  "homepage": "https://github.com/yourusername/aemeath#readme",
+  "bugs": {
+    "url": "https://github.com/yourusername/aemeath/issues"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run start.ts",
+    "build": "bun build src/index.ts --compile --outfile dist/aemeath",
+    "build:debug": "bun build src/index.ts --compile --debug --outfile dist/aemeath-debug",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint:fix": "eslint src/ --ext .ts,.tsx --fix",
+    "format": "prettier --write src/**/*.ts src/**/*.tsx",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "jarvis",
+    "voice",
+    "companion",
+    "cli",
+    "terminal"
+  ],
+  "author": "Aemeath Team",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.0.0",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.3.0",
+    "ink": "^4.0.0",
+    "ink-text-input": "^6.0.0",
+    "openai": "^4.0.0",
+    "pdf-parse": "^1.1.1",
+    "react": "^18.2.0",
+    "sharp": "^0.33.0",
+    "ws": "^8.14.0",
+    "yaml": "^2.3.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^18.2.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "prettier": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ]
+}
