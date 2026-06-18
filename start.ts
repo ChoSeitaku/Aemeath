@@ -11,7 +11,7 @@ import * as readline from 'readline';
 
 console.log('');
 console.log('╔═══════════════════════════════════════════════════╗');
-console.log('║          A E M E A T H   v1.0.0                  ║');
+console.log('║          A E M E A T H   v1.0.1                  ║');
 console.log('║          爱弥斯 · 你的个人AI助手                  ║');
 console.log('╚═══════════════════════════════════════════════════╝');
 console.log('');
@@ -19,12 +19,20 @@ console.log('');
 // 历史命令管理
 const history: string[] = [];
 let historyIndex = -1;
+let currentInput = '';
 
 // 创建 readline 接口
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
+  terminal: true,
 });
+
+// 清除当前行并重新显示提示符
+function clearLineAndShowPrompt(prompt: string, content: string = '') {
+  process.stdout.write('\r\x1b[K');
+  process.stdout.write(`${prompt}${content}`);
+}
 
 // 监听按键事件
 process.stdin.on('data', (key) => {
@@ -34,10 +42,8 @@ process.stdin.on('data', (key) => {
   if (keyStr === '\x1b[A') {
     if (history.length > 0 && historyIndex < history.length - 1) {
       historyIndex++;
-      const cmd = history[history.length - 1 - historyIndex];
-      // 清除当前行并显示历史命令
-      process.stdout.write('\r\x1b[K');
-      process.stdout.write(`❯ ${cmd}`);
+      currentInput = history[history.length - 1 - historyIndex];
+      clearLineAndShowPrompt('❯ ', currentInput);
     }
   }
   
@@ -45,13 +51,12 @@ process.stdin.on('data', (key) => {
   if (keyStr === '\x1b[B') {
     if (historyIndex > 0) {
       historyIndex--;
-      const cmd = history[history.length - 1 - historyIndex];
-      process.stdout.write('\r\x1b[K');
-      process.stdout.write(`❯ ${cmd}`);
+      currentInput = history[history.length - 1 - historyIndex];
+      clearLineAndShowPrompt('❯ ', currentInput);
     } else if (historyIndex === 0) {
       historyIndex = -1;
-      process.stdout.write('\r\x1b[K');
-      process.stdout.write('❯ ');
+      currentInput = '';
+      clearLineAndShowPrompt('❯ ');
     }
   }
 });
@@ -59,9 +64,8 @@ process.stdin.on('data', (key) => {
 // 封装问题函数
 const askQuestion = (question: string): Promise<string> => {
   return new Promise((resolve) => {
+    currentInput = '';
     rl.question(question, (answer) => {
-      // 清除输入行
-      process.stdout.write('\r\x1b[K');
       resolve(answer);
     });
   });
