@@ -8,6 +8,8 @@ import { AEMEATH_SYSTEM_PROMPT } from '../ai/prompts';
 import { ConversationManager, Message, ConversationConfig } from './conversation';
 import { ContextManager } from './context';
 
+export type { Message };
+
 /**
  * 引擎配置
  */
@@ -228,6 +230,13 @@ ${contextSummary}
    */
   getHistory(): Message[] {
     return this.conversation.getHistory();
+  }
+
+  /**
+   * 获取当前模型
+   */
+  getModel(): string {
+    return this.client.getModel();
   }
 
   /**

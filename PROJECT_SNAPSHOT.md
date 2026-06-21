@@ -1,7 +1,7 @@
 # Aemeath 项目快照
 
-> 最后更新：2025-01-15
-> 项目状态：Phase 1 完成，v1.0.1
+> 最后更新：2026-06-21
+> 项目状态：v1.0.2 - 星炬学院拉海洛风格 CLI
 
 ---
 
@@ -9,13 +9,14 @@
 
 | 项目 | 详情 |
 |------|------|
-| **名称** | Aemeath（爱弥斯/小爱） |
+| **名称** | xiaoai / Aemeath（爱弥斯/小爱） |
 | **类型** | 个人AI助手（陪伴型） |
 | **角色** | 鸣潮游戏中的爱弥斯角色 |
-| **技术栈** | TypeScript + Ink + Bun |
+| **技术栈** | TypeScript + Bun + readline |
 | **AI模型** | DeepSeek V4 Flash |
-| **当前版本** | v1.0.1 |
+| **当前版本** | v1.0.2 |
 | **仓库** | https://github.com/ChoSeitaku/Aemeath |
+| **全局命令** | `xiaoai` |
 
 ---
 
@@ -23,10 +24,20 @@
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
-| v1.0.0 | 2025-01-15 | Phase 1 完成 - 核心对话引擎 |
-| v1.0.1 | 2025-01-15 | 修复输入框、修正角色设定、添加历史命令 |
+| v1.0.0 | 2026-01-15 | Phase 1 完成 - 核心对话引擎 |
+| v1.0.1 | 2026-01-15 | 修复输入框、修正角色设定、添加历史命令 |
+| v1.0.2 | 2026-06-21 | 星炬学院拉海洛风格、全局命令、配置系统 |
 
-### v1.0.1 更新内容
+### v1.0.2 更新内容
+
+- ✅ 星炬学院拉海洛风格 UI（复古未来主义设计）
+- ✅ 全局命令 `xiaoai`（任意目录可用）
+- ✅ 配置系统 `~/.xiaoai/settings.json`
+- ✅ 流式 AI 输出
+- ✅ 命令系统（/help /clear /history /model /settings /quit）
+- ✅ 上下箭头历史命令
+- ✅ 角色设定修正（爱弥斯完整背景故事）
+- ✅ Ink Bun 兼容层基础框架
 
 - ✅ 支持上下箭头键切换历史命令
 - ✅ 修复输入框不清空的问题
@@ -41,7 +52,10 @@
 |------|------|------|------|
 | 运行时 | Bun | latest | ✅ 已集成 |
 | 语言 | TypeScript | 5.x | ✅ 已集成 |
-| CLI框架 | Ink | 4.x | ✅ 已集成 |
+| CLI框架 | 自定义 Ink 兼容层 | - | 🔧 开发中 |
+| 布局引擎 | yoga-layout | 3.2.1 | ✅ 已集成 |
+| React | react | 18.3.1 | ✅ 已集成 |
+| React Reconciler | react-reconciler | 0.29.2 | ✅ 已集成 |
 | AI客户端 | openai | 4.x | ✅ 已集成 |
 | 语音合成 | Edge TTS | - | ✅ 已集成 |
 | 数据库 | better-sqlite3 | - | ⬜ 待集成 |
@@ -97,19 +111,31 @@ Aemeath/
 │   │   ├── conversation.ts         # 对话管理器
 │   │   ├── context.ts              # 上下文管理
 │   │   └── index.ts                # 模块导出
+│   ├── ink/                         # 自定义 Ink Bun 兼容层（开发中）
+│   │   ├── index.ts                # 模块导出
+│   │   ├── reconciler.ts           # React reconciler
+│   │   ├── render.ts               # 渲染函数
+│   │   ├── stdin.ts                # Bun stdin 处理器
+│   │   ├── layout/                 # 布局引擎
+│   │   │   ├── node.ts            # 布局接口
+│   │   │   ├── yoga.ts            # Yoga 适配器
+│   │   │   └── engine.ts          # 引擎工厂
+│   │   └── components/             # React 组件
+│   │       ├── Box.tsx            # Box 组件
+│   │       └── Text.tsx           # Text 组件
 │   ├── voice/                       # 语音模块
 │   │   ├── tts.ts                  # 语音合成
 │   │   ├── config.ts               # 语音配置
 │   │   ├── manager.ts              # 语音管理
 │   │   └── index.ts                # 模块导出
 │   └── cli/                         # CLI 界面
-│       ├── App.tsx                 # 主应用组件
+│       ├── App.tsx                 # 主应用组件（使用自定义 Ink）
 │       ├── commands.ts             # 命令系统
 │       ├── components/             # UI 组件
 │       └── hooks/                  # React Hooks
 ├── tests/                           # 测试
 ├── docs/                            # 文档（12个）
-├── start.ts                         # 启动脚本
+├── start.ts                         # 启动脚本（readline 备用）
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -219,20 +245,31 @@ bun test
 
 ## 11. 已知问题
 
-### Ink CLI 兼容性问题
+### Ink CLI 兼容性问题（开发中）
 
-- **问题**：Bun 运行时不支持 `process.stdin.setRawMode`，导致 Ink 无法正常工作
-- **临时方案**：使用 `bun run start`（readline 版本）
-- **长期方案**：参考 Claude Code 的自研 Ink 框架
+- **问题**：Bun 运行时不支持 `process.stdin.setRawMode`，导致上游 Ink 无法正常工作
+- **解决方案**：自定义 Ink Bun 兼容层（`src/ink/`）
+- **当前状态**：
+  - ✅ Yoga 布局引擎适配器完成（使用标准 `yoga-layout` npm）
+  - ✅ React reconciler 基础框架完成
+  - ✅ 基础组件（Box, Text）完成
+  - ✅ 简单渲染测试通过
+  - 🔧 完整 App 集成待修复（`detachDeletedInstance` 等缺失函数）
+- **备选方案**：`bun run start`（readline 版本，始终可用）
 
-### Claude Code 参考
+### 技术参考
 
-Claude Code 使用了以下方案解决此问题：
-1. `src/ink/` - 自研 Ink 终端渲染框架
-2. `src/native-ts/` - 原生 TypeScript 桥接层
-3. `src/parse-keypress.ts` - 自定义按键解析器
+参考 Claude Code 的自研 Ink 框架：
+1. `src/ink/` - 自研 Ink 终端渲染框架（100+ 文件，~1MB）
+2. `src/native-ts/yoga-layout/` - 纯 TypeScript Yoga 布局引擎
+3. `src/ink/parse-keypress.ts` - 自定义按键解析器（801行）
+
+我们的方案：
+- 使用标准 `yoga-layout` npm 替代自定义 TS 移植
+- 简化 reconciler（仅核心功能）
+- 保留扩展性（后续可添加更多功能）
 
 ---
 
-**项目状态**：✅ Phase 1 完成，可运行
-**下次行动**：开始 Phase 2，实现工具系统
+**项目状态**：✅ Phase 1 完成，🔧 Ink Bun 兼容层开发中
+**下次行动**：修复 App 继成问题，完成 Ink Bun 兼容层

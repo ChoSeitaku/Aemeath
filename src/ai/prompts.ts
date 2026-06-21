@@ -89,7 +89,7 @@ export const ASSISTANT_SYSTEM_PROMPT = `你是一个友好、有帮助的AI助�
  */
 export function buildMessages(
   userMessage: string,
-  history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  history: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [],
   systemPrompt?: string
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];

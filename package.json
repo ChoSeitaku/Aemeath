@@ -1,15 +1,15 @@
 {
-  "name": "aemeath",
-  "version": "1.0.0",
+  "name": "xiaoai",
+  "version": "1.0.2",
   "description": "Aemeath - 你的个人AI助手，不只是工具，更是朋友",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "aemeath": "./dist/index.js"
+    "xiaoai": "./start.ts"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/aemeath.git"
+    "url": "git+https://github.com/yourusername/aemeath.git"
   },
   "homepage": "https://github.com/yourusername/aemeath#readme",
   "bugs": {
@@ -18,10 +18,13 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run start.ts",
+    "dev:ink": "bun run src/ink/test-ink.tsx",
     "build": "bun build src/index.ts --compile --outfile dist/aemeath",
     "build:debug": "bun build src/index.ts --compile --debug --outfile dist/aemeath-debug",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
+    "test:ink": "bun run src/ink/test.tsx",
+    "test:render": "bun run src/ink/test-render.tsx",
     "lint": "eslint src/ --ext .ts,.tsx",
     "lint:fix": "eslint src/ --ext .ts,.tsx --fix",
     "format": "prettier --write src/**/*.ts src/**/*.tsx",
@@ -51,18 +54,19 @@
     "sharp": "^0.33.0",
     "ws": "^8.14.0",
     "yaml": "^2.3.0",
+    "yoga-layout": "^3.2.1",
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
     "@types/bun": "latest",
     "@types/react": "^18.2.0",
-    "@types/better-sqlite3": "^7.6.0",
     "@types/ws": "^8.5.0",
-    "typescript": "^5.3.0",
-    "eslint": "^8.56.0",
-    "@typescript-eslint/parser": "^6.19.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "prettier": "^3.2.0"
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -74,5 +78,9 @@
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
-  ]
+  ],
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  }
 }

@@ -1,310 +1,202 @@
 /**
- * 主应用组件
- * Aemeath CLI 界面 - 优化版
+ * Aemeath CLI - 星炬学院拉海洛风格
+ * Ink 渲染 · 自适应终端宽度
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
-import TextInput from 'ink-text-input';
-import { AemeathEngine, Message } from '../core/engine';
-import { 
-  CommandRegistry, 
-  createDefaultCommandRegistry 
-} from './commands';
-import { useAutoComplete } from './hooks';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { Box, Text, useInput, type InputEvent } from '../ink/index.js'
+import { AemeathEngine, Message } from '../core/engine.js'
+import { createDefaultCommandRegistry } from './commands.js'
 
-// 应用状态
 interface AppState {
-  messages: Message[];
-  isLoading: boolean;
-  streamingMessage: string;
-  isReady: boolean;
-  error: string | null;
+  messages: Message[]
+  isLoading: boolean
+  streamingMessage: string
+  isReady: boolean
+  error: string | null
 }
 
-// 主应用组件
-export const App: React.FC = () => {
+const STAR = '✦'
+const SEP = '─────────────────────────────────────────────────────'
+
+const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
-    messages: [],
-    isLoading: false,
-    streamingMessage: '',
-    isReady: false,
-    error: null,
-  });
+    messages: [], isLoading: false, streamingMessage: '', isReady: false, error: null,
+  })
+  const [inputValue, setInputValue] = useState('')
+  const cursorRef = useRef(0)
 
-  const { exit } = useApp();
-
-  // 初始化引擎
   const engine = useMemo(() => {
     try {
       return new AemeathEngine({
         apiKey: process.env.DEEPSEEK_API_KEY,
         baseUrl: process.env.DEEPSEEK_BASE_URL,
         model: process.env.DEEPSEEK_MODEL,
-      });
-    } catch (error) {
-      return null;
-    }
-  }, []);
+      })
+    } catch { return null }
+  }, [])
 
-  // 初始化命令注册表
-  const registry = useMemo(() => {
-    return createDefaultCommandRegistry();
-  }, []);
+  const registry = useMemo(() => createDefaultCommandRegistry(), [])
+  const commandList = useMemo(() => registry.getCommandList().map(c => `/${c.name}`), [registry])
+  const completionsRef = useRef<string[]>([])
 
-  // 获取命令列表用于自动补全
-  const commandList = useMemo(() => {
-    return registry.getCommandList().map(cmd => `/${cmd.name}`);
-  }, [registry]);
+  const getCompletions = useCallback((input: string) => {
+    if (!input.startsWith('/')) return []
+    const q = input.slice(1).toLowerCase()
+    return commandList.filter(c => c.replace('/', '').toLowerCase().startsWith(q))
+  }, [commandList])
 
-  // 自动补全 Hook
-  const {
-    inputValue,
-    completions,
-    setInputValue,
-    handleTab,
-    resetCompletions,
-  } = useAutoComplete({ commands: commandList });
+  useEffect(() => { if (engine) setState(p => ({ ...p, isReady: true })) }, [engine])
 
-  // 标记为就绪
-  useEffect(() => {
-    if (engine) {
-      setState(prev => ({ ...prev, isReady: true }));
-    }
-  }, [engine]);
-
-  // 处理输入提交
   const handleSubmit = useCallback(async (value: string) => {
-    if (!value.trim() || !engine) return;
+    if (!value.trim() || !engine) return
+    if (value.startsWith('/quit') || value.startsWith('/q') || value === '/exit') process.exit(0)
 
-    // 检查是否是退出命令
-    if (value.startsWith('/quit') || value.startsWith('/q') || value === '/exit') {
-      exit();
-      return;
-    }
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: value, timestamp: new Date() }
+    setState(p => ({ ...p, messages: [...p.messages, userMsg], isLoading: true, streamingMessage: '' }))
+    setInputValue('')
+    cursorRef.current = 0
+    completionsRef.current = []
 
-    // 添加用户消息
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: value,
-      timestamp: new Date(),
-    };
-
-    setState(prev => ({
-      ...prev,
-      messages: [...prev.messages, userMessage],
-      isLoading: true,
-      streamingMessage: '',
-    }));
-
-    // 重置输入
-    resetCompletions();
-
-    // 处理输入
     try {
-      // 检查是否是命令
       if (value.startsWith('/')) {
-        const { name, args } = registry.parseCommand(value);
-        const result = registry.execute(name, args, {
-          engine,
-          registry,
-          exit,
-        });
-        
+        const { name, args } = registry.parseCommand(value)
+        const result = registry.execute(name, args, { engine, registry, exit: () => process.exit(0) })
         if (result) {
-          // 添加助手消息
-          const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: result,
-            timestamp: new Date(),
-          };
-
-          setState(prev => ({
-            ...prev,
-            messages: [...prev.messages, assistantMessage],
-            isLoading: false,
-          }));
+          const aMsg: Message = { id: String(Date.now() + 1), role: 'assistant', content: result, timestamp: new Date() }
+          setState(p => ({ ...p, messages: [...p.messages, aMsg], isLoading: false }))
         }
       } else {
-        // 流式处理
-        let fullResponse = '';
-        
+        let full = ''
         for await (const chunk of engine.processInputStream(value)) {
-          fullResponse += chunk;
-          setState(prev => ({
-            ...prev,
-            streamingMessage: fullResponse,
-          }));
+          full += chunk
+          setState(p => ({ ...p, streamingMessage: full }))
         }
-
-        // 添加助手消息
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: fullResponse,
-          timestamp: new Date(),
-        };
-
-        setState(prev => ({
-          ...prev,
-          messages: [...prev.messages, assistantMessage],
-          isLoading: false,
-          streamingMessage: '',
-        }));
+        const aMsg: Message = { id: String(Date.now() + 1), role: 'assistant', content: full, timestamp: new Date() }
+        setState(p => ({ ...p, messages: [...p.messages, aMsg], isLoading: false, streamingMessage: '' }))
       }
-    } catch (error) {
-      console.error('处理输入失败:', error);
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        streamingMessage: '',
-        error: '处理输入时出错',
-      }));
+    } catch {
+      setState(p => ({ ...p, isLoading: false, streamingMessage: '', error: '爱弥斯遇到了一些问题' }))
     }
-  }, [engine, registry, exit, resetCompletions]);
+  }, [engine, registry])
 
-  // 处理快捷键
-  useInput((input, key) => {
-    if (key.ctrl && input === 'c') {
-      exit();
+  useInput(useCallback((event: InputEvent) => {
+    if (state.isLoading) return
+    switch (event.type) {
+      case 'return': handleSubmit(inputValue); break
+      case 'char': setInputValue(prev => prev + event.char); break
+      case 'backspace': setInputValue(prev => prev.length > 0 ? prev.slice(0, -1) : prev); break
+      case 'home': break
+      case 'end': break
+      case 'tab': {
+        const c = getCompletions(inputValue)
+        completionsRef.current = c
+        if (c.length === 1) setInputValue(c[0] + ' ')
+        break
+      }
     }
-    if (key.tab) {
-      handleTab();
-    }
-  });
+  }, [inputValue, state.isLoading, handleSubmit, getCompletions]))
 
-  // 显示错误信息
   if (!engine) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text bold color="red">
-          ❌ 初始化失败
-        </Text>
-        <Text color="gray">
-          请检查 DEEPSEEK_API_KEY 环境变量是否正确设置
-        </Text>
-        <Text color="gray">
-          复制 .env.example 为 .env 并添加 API Key
-        </Text>
+        <Text bold color="red">{'  ✗ DEEPSEEK_API_KEY 未设置'}</Text>
+        <Text dim color="gray">{'  复制 .env.example 为 .env，添加 API Key'}</Text>
       </Box>
-    );
+    )
   }
 
-  // 显示加载状态
   if (!state.isReady) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="yellow">⏳ 正在初始化...</Text>
+        <Text color="yellow">{'  ✦ 正在连接星炬终端...'}</Text>
       </Box>
-    );
+    )
   }
 
+  const model = engine.getModel()
+  const msgCount = state.messages.length
+
   return (
-    <Box flexDirection="column" padding={1}>
-      {/* 欢迎界面 */}
-      <Box marginBottom={1}>
-        <Text bold color="magenta">
-          ╔═══════════════════════════════════════════════════╗
-        </Text>
+    <Box flexDirection="column">
+      <Box marginTop={1} marginBottom={1}>
+        <Text bold color="yellow">{'  ╔══════════════════════════════════════════════════╗'}</Text>
+      </Box>
+      <Box>
+        <Text bold color="yellow">{'  ║  ✦  ✦   A E M E A T H   ✦  ✦              ║'}</Text>
+      </Box>
+      <Box>
+        <Text bold color="yellow">{'  ║  ✦✦  星 炬 学 院 · 拉 海 洛  ✦✦            ║'}</Text>
+      </Box>
+      <Box>
+        <Text dim italic color="yellow">{'  ║      拉贝尔学部 · 电子幽灵终端            ║'}</Text>
+      </Box>
+      <Box>
+        <Text bold color="yellow">{'  ║  ✦  ✦                      ✦  ✦            ║'}</Text>
       </Box>
       <Box marginBottom={1}>
-        <Text bold color="magenta">
-          ║          A E M E A T H   v1.0.0                  ║
-        </Text>
-      </Box>
-      <Box marginBottom={1}>
-        <Text bold color="magenta">
-          ║          爱弥斯 · 你的个人AI助手                  ║
-        </Text>
-      </Box>
-      <Box marginBottom={1}>
-        <Text bold color="magenta">
-          ╚═══════════════════════════════════════════════════╝
-        </Text>
-      </Box>
-      <Box marginBottom={1}>
-        <Text color="gray">
-          模型: deepseek-v4-flash · 记忆: {state.messages.length}条 · 工具: 0个
-        </Text>
-      </Box>
-      <Box marginBottom={1}>
-        <Text color="gray">
-          输入 /help 查看命令 · Tab 补全 · /quit 退出
-        </Text>
-      </Box>
-      <Box marginBottom={1}>
-        <Text color="gray">
-          ─────────────────────────────────────────────────────
-        </Text>
+        <Text bold color="yellow">{'  ╚══════════════════════════════════════════════════╝'}</Text>
       </Box>
 
-      {/* 消息列表 */}
+      <Box marginBottom={1}>
+        <Text dim color="gray">{'  ──────────────────────────────────────────────────────'}</Text>
+      </Box>
+      <Box marginBottom={1}>
+        <Text color="yellow">{'  ✦ 模型 · '}{model}{' │ 记忆 · '}{String(msgCount) + '条'}{' │ 工具 · 0个'}</Text>
+      </Box>
+      <Box marginBottom={1}>
+        <Text dim color="gray">{'  ──────────────────────────────────────────────────────'}</Text>
+      </Box>
+
       <Box flexDirection="column" marginBottom={1}>
-        {state.messages.map((msg) => (
+        {state.messages.map(msg => (
           <Box key={msg.id} marginBottom={1}>
-            <Text bold color={msg.role === 'user' ? 'cyan' : 'green'}>
-              {msg.role === 'user' ? '❯ ' : '💬 '}
+            <Text bold color={msg.role === 'user' ? 'blue' : 'yellow'}>
+              {msg.role === 'user' ? '  ✦ ' : '  ✦ '}
             </Text>
-            <Text>{msg.content}</Text>
+            <Text color="white">{msg.content}</Text>
           </Box>
         ))}
       </Box>
 
-      {/* 流式输出 */}
       {state.isLoading && state.streamingMessage && (
         <Box marginBottom={1}>
-          <Text bold color="green">💬 </Text>
-          <Text>{state.streamingMessage}</Text>
-          <Text color="gray">▌</Text>
+          <Text bold color="yellow">{'  ✦ '}</Text>
+          <Text color="white">{state.streamingMessage}</Text>
+          <Text dim color="gray">{'▌'}</Text>
         </Box>
       )}
 
-      {/* 加载状态 */}
       {state.isLoading && !state.streamingMessage && (
         <Box marginBottom={1}>
-          <Text color="yellow">💭 思考中...</Text>
+          <Text color="yellow">{'  ✦ 思考中...'}</Text>
         </Box>
       )}
 
-      {/* 命令补全提示 */}
-      {completions.length > 1 && (
+      {completionsRef.current.length > 1 && (
         <Box marginBottom={1}>
-          <Text color="gray">
-            补全: {completions.join(' | ')}
-          </Text>
+          <Text dim color="gray">{'    补全: ' + completionsRef.current.join(' │ ')}</Text>
         </Box>
       )}
 
-      {/* 错误提示 */}
       {state.error && (
         <Box marginBottom={1}>
-          <Text color="red">❌ {state.error}</Text>
+          <Text color="red">{'  ✗ ' + state.error}</Text>
         </Box>
       )}
 
-      {/* 输入框 */}
-      <Box>
-        <Text bold color="cyan">❯ </Text>
-        <TextInput
-          value={inputValue}
-          onChange={setInputValue}
-          onSubmit={handleSubmit}
-          placeholder="输入消息..."
-        />
+      <Box flexDirection="row">
+        <Text bold color="yellow">{'  ✦ ❯ '}</Text>
+        <Text color="white">{inputValue}</Text>
+        <Text dim color="gray">{'▌'}</Text>
       </Box>
 
-      {/* 状态栏 */}
       <Box marginTop={1}>
-        <Text color="gray">
-          {state.isLoading ? ' streaming...' : ''}
-          {' '}Ctrl+C 退出 | Tab 补全 | 模型: deepseek-v4-flash
-          {state.messages.length > 0 ? ` | 消息: ${state.messages.length}` : ''}
-        </Text>
+        <Text dim color="gray">{'  Ctrl+C 退出 · 上下键历史 · Tab 补全 · ' + model}</Text>
       </Box>
     </Box>
-  );
-};
+  )
+}
 
-export default App;
+export { App }
+export default App

@@ -196,8 +196,8 @@ ${command.usage ? `用法: ${command.usage}` : ''}
     description: '查看状态信息',
     execute: (args, context) => {
       const history = context.engine.getHistory();
-      const userMessages = history.filter(m => m.role === 'user').length;
-      const assistantMessages = history.filter(m => m.role === 'assistant').length;
+      const userMessages = history.filter((m: any) => m.role === 'user').length;
+      const assistantMessages = history.filter((m: any) => m.role === 'assistant').length;
       
       return `
 📊 状态信息

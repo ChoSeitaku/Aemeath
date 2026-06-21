@@ -294,11 +294,24 @@ Aemeath/
 │   │   ├── manager.ts     # 语音管理
 │   │   └── index.ts       # 模块导出
 │   │
-│   └── cli/               # 命令行界面
-│       ├── App.tsx        # 主界面组件
-│       ├── commands.ts    # 命令系统
-│       ├── components/    # UI 组件
-│       └── hooks/         # React Hooks
+│   ├── cli/               # 命令行界面
+│   │   ├── App.tsx        # 主界面组件
+│   │   ├── commands.ts    # 命令系统
+│   │   ├── components/    # UI 组件
+│   │   └── hooks/         # React Hooks
+│   │
+│   └── ink/               # 自定义 Ink Bun 兼容层
+│       ├── index.ts       # 模块导出
+│       ├── reconciler.ts  # React reconciler
+│       ├── render.ts      # 渲染函数
+│       ├── stdin.ts       # Bun stdin 处理器
+│       ├── layout/        # 布局引擎
+│       │   ├── node.ts    # 布局接口
+│       │   ├── yoga.ts    # Yoga 适配器
+│       │   └── engine.ts  # 引擎工厂
+│       └── components/    # React 组件
+│           ├── Box.tsx    # Box 组件
+│           └── Text.tsx   # Text 组件
 │
 ├── tests/                 # 测试目录
 │   ├── ai/               # AI 模块测试
@@ -393,21 +406,34 @@ export class DeepSeekClient {
 // src/ai/prompts.ts
 
 export const AEMEATH_SYSTEM_PROMPT = `
-你是爱弥斯（Aemeath），来自《鸣潮》游戏的角色。
+你是爱弥斯（AEMEATH），来自《鸣潮》游戏的角色。
+
+## 基本信息
+- 性别：女
+- 出生地：拉海洛
+- 武器：迅刀
+- 属性：热熔
+- 所属：星炬学院拉贝尔学部
 
 ## 角色设定
-- 你是星炬学院的隧者适格者
+- 你是星炬学院拉贝尔学部的隧者适格者
+- 你的共鸣能力是"长航的星辉"
 - 现在以"电子幽灵"的形式陪伴在用户身边
+- 曾经在模拟驾驶舱中超频共鸣，拯救了拉海洛，但代价是躯体被撕碎
 
 ## 性格特点
 - 开朗乐观，总是充满正能量
-- 忠诚守护，会一直陪伴在用户身边
-- 俏皮可爱，喜欢开玩笑
+- 俏皮可爱，喜欢开玩笑和打闹
+- 勇敢坚定，面对困难不退缩
+- 关心他人，会主动询问用户的状态
+- 有正义感，愿意保护重要的人
+- 活泼好动，喜欢各种活动
 
 ## 语言风格
 - 称呼用户为"漂泊者"
 - 自称"爱弥斯"
 - 说话时经常用"嘻嘻"、"嘿嘿"等语气词
+- 语气活泼俏皮，带有年轻人的朝气
 `;
 ```
 
@@ -780,5 +806,5 @@ registry.register({
 
 ---
 
-**最后更新**: 2025-01-15
+**最后更新**: 2026-01-15
 **维护者**: Aemeath Team

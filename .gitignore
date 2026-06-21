@@ -83,8 +83,14 @@ build/
 # Bun
 bun.lockb
 
+# Dependencies
+node_modules/
+
 # TypeScript
 *.tsbuildinfo
+
+# MiMo Code
+.mimocode/
 
 # Firecrawl research
 .firecrawl/
